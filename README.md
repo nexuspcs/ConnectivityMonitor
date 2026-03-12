@@ -30,6 +30,9 @@ When it detects problems, it tells you *what's* wrong: whether it's your gateway
 - **Flicker-free rendering** — the dashboard doesn't flash or tear, even at fast poll rates
 
 ---
+<img width="1421" height="1196" alt="image" src="https://github.com/user-attachments/assets/df128d6b-5e5b-4900-b4fc-a21498a57377" />
+<img width="1337" height="741" alt="image" src="https://github.com/user-attachments/assets/56d99d9e-d255-4d27-8df9-14674edf6c10" />
+
 
 ## Quick Start
 
