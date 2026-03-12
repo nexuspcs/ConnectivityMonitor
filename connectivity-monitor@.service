@@ -1,0 +1,15 @@
+[Unit]
+Description=Connectivity Monitor v4.0
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=%i
+ExecStart=/usr/bin/python3 -m connectivity_monitor --headless
+WorkingDirectory=%h
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
