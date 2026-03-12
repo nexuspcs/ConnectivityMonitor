@@ -163,18 +163,15 @@ The monitor grades your connection based on latency, jitter, and packet loss:
 
 ## Contributing
 
-This project is open source and contributions are welcome. If you've got an idea, found a bug, or want to add a feature — go for it.
+This project is open source and contributions are welcome — code, documentation, bug reports, feature ideas, and more. If you've got an idea, found a bug, or want to add a feature — go for it.
 
 - **Fork the repo** and make your changes
 - **Open a pull request** with a clear description of what you changed and why
 - **Report bugs** by opening an issue — include what you were doing, what happened, and what you expected
 
-Some areas that could use work:
-- Cross-platform support (Linux/macOS) — the biggest gap right now
-- More ping targets / custom target presets
-- Historical trend analysis across multiple sessions
-- Network speed test integration
-- Dark/light theme toggle
+Look for issues tagged with **"Help wanted"** and **"Good first issue"** to find a good starting point.
+
+For full details, see [CONTRIBUTING.md](CONTRIBUTING.md). Please also review our [Code of Conduct](CODE_OF_CONDUCT.md).
 
 If you find this useful, **give it a star** — it helps other people find it and motivates continued development.
 
