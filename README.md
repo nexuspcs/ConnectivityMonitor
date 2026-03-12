@@ -1,6 +1,6 @@
 # Connectivity Monitor
 
-A real-time network monitoring tool built entirely in PowerShell. No installs, no dependencies, no bloat — just run the script and get a full dashboard showing exactly what your network is doing.
+A real-time network monitoring tool built entirely in PowerShell. No installs, no dependencies, no bloat , just run the script and get a full dashboard showing exactly what your network is doing.
 
 Built out of frustration with flaky ISPs and mysterious Wi-Fi drops. If you've ever wanted to prove to your ISP that yes, the connection *is* dropping, this tool gives you the data to back it up.
 
