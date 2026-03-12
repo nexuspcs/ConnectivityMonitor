@@ -4,6 +4,9 @@ A real-time network monitoring tool built entirely in PowerShell. No installs, n
 
 Built out of frustration with flaky ISPs and mysterious Wi-Fi drops. If you've ever wanted to prove to your ISP that yes, the connection *is* dropping, this tool gives you the data to back it up.
 
+**KEY EXPORTS**
+- **Export to CSV**
+- **HTML Dashboard export**
 ---
 
 ## What It Does
