@@ -1,0 +1,19 @@
+[Unit]
+Description=Connectivity Monitor - Cross-Platform DNS & Network Monitor
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# --- Edit these to match your setup ---
+User=pi
+WorkingDirectory=/home/pi/ConnectivityMonitor
+ExecStart=/usr/bin/python3 /home/pi/ConnectivityMonitor/connectivity_monitor.py --headless --api-port 8080
+# ---------------------------------------
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
