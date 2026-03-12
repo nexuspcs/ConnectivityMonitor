@@ -1287,7 +1287,9 @@ function BuildFrame($adapter, $gw, $localIP, $target, $ping, $gwPing, $dnsResult
 }
 
 # ================================================================
-#  LOGGING (ENRICHED CSV with -Force)
+#  LOGGING (ENRICHED CSV)
+#  -Force on Export-Csv -Append handles column mismatch when CSV
+#  schema changes between versions (e.g. v3 -> v4 migration).
 # ================================================================
 function LogPing($pingResult, $gwResult, $dnsResult, $wifiSig) {
     $latVal = ""
