@@ -355,6 +355,15 @@ class MonitorState:
     def session_duration(self):
         return datetime.datetime.now() - self.session_start
 
+    def _recent_dns_stats(self):
+        if not self.dns_times:
+            return {"avg_ms": None, "last_ms": None}
+        recent = self.dns_times[-20:]
+        return {
+            "avg_ms": round(sum(recent) / len(recent), 1),
+            "last_ms": self.dns_times[-1],
+        }
+
     def status_dict(self):
         """Return a JSON-serialisable status snapshot."""
         dur = self.session_duration()
@@ -391,10 +400,7 @@ class MonitorState:
                 }
                 for t, d in self.per_target.items()
             },
-            "recent_dns": {
-                "avg_ms": round(sum(self.dns_times[-20:]) / len(self.dns_times[-20:]), 1) if self.dns_times else None,
-                "last_ms": self.dns_times[-1] if self.dns_times else None,
-            },
+            "recent_dns": self._recent_dns_stats(),
         }
 
 
@@ -506,10 +512,10 @@ class ApiHandler(http.server.BaseHTTPRequestHandler):
         pass
 
 
-def start_api_server(port, state):
+def start_api_server(port, state, bind="0.0.0.0"):
     """Start the HTTP API server in a daemon thread."""
     ApiHandler.state = state
-    server = http.server.HTTPServer(("0.0.0.0", port), ApiHandler)
+    server = http.server.HTTPServer((bind, port), ApiHandler)
     server.timeout = 1
     thread = threading.Thread(target=_serve_forever, args=(server,), daemon=True)
     thread.start()
@@ -604,6 +610,9 @@ def headless_config(args):
     if args.api_port is not None:
         cfg["api_port"] = args.api_port
     cfg.setdefault("api_port", DEFAULT_API_PORT)
+    if getattr(args, "api_bind", None) is not None:
+        cfg["api_bind"] = args.api_bind
+    cfg.setdefault("api_bind", "0.0.0.0")
     return cfg
 
 
@@ -713,6 +722,7 @@ def run_monitor(cfg, base_dir, headless=False):
     enable_dns = cfg.get("enable_dns", True)
     dns_target = cfg.get("dns_target", DEFAULT_DNS_TARGET)
     api_port = cfg.get("api_port", 0)
+    api_bind = cfg.get("api_bind", "0.0.0.0")
 
     # Detect network info
     state.gateway = detect_gateway()
@@ -731,7 +741,7 @@ def run_monitor(cfg, base_dir, headless=False):
     api_server = None
     if api_port and api_port > 0:
         try:
-            api_server = start_api_server(api_port, state)
+            api_server = start_api_server(api_port, state, bind=api_bind)
             print(f"  HTTP API  : http://{state.local_ip}:{api_port}/status")
         except OSError as e:
             print(f"  HTTP API  : Failed to start on port {api_port}: {e}")
@@ -877,6 +887,11 @@ def main():
         type=int,
         default=None,
         help=f"HTTP API port (default: {DEFAULT_API_PORT}, 0 to disable)",
+    )
+    parser.add_argument(
+        "--api-bind",
+        default=None,
+        help="HTTP API bind address (default: 0.0.0.0 — all interfaces; use 127.0.0.1 for local only)",
     )
     parser.add_argument(
         "--version", "-v",
