@@ -215,7 +215,7 @@ ConnectivityMonitor/
 
 ## Contributing
 
-This project is open source and contributions are welcome.
+This project is open source and contributions are welcome — code, documentation, bug reports, feature ideas, and more. If you've got an idea, found a bug, or want to add a feature — go for it.
 
 - **Fork the repo** and make your changes
 - **Open a pull request** with a clear description of what you changed and why
