@@ -105,7 +105,7 @@ def detect_public_ip(state):
         import urllib.request
         import json as json_mod
         req = urllib.request.Request(
-            "http://ip-api.com/json",
+            "https://ip-api.com/json",
             headers={"User-Agent": "ConnectivityMonitor/4.0"}
         )
         with urllib.request.urlopen(req, timeout=5) as resp:

@@ -100,7 +100,6 @@ On first run, you'll be prompted to configure:
 | Latency warning | 100ms | Threshold for flagging high latency |
 | DNS health check | Yes | Also check DNS resolution each cycle |
 | DNS hostname | `google.com` | What hostname to resolve for DNS checks |
-| Audible alerts | No | Beep on connectivity drops |
 | Web dashboard port | 8080 | Port for the live web dashboard (Python version) |
 
 Config is saved to `~/ConnectivityMonitor/monitor_config.json` (or `%USERPROFILE%\ConnectivityMonitor\` on Windows) and reused on next run.

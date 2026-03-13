@@ -7,14 +7,12 @@ import sys
 
 # Default config values
 DEFAULTS = {
-    "interface": "",
     "poll": 2,
     "threshold": 4,
     "targets": "1.1.1.1,8.8.8.8,208.67.222.222",
     "lat_warn": 100,
     "enable_dns": True,
     "dns_target": "google.com",
-    "enable_beep": False,
     "web_port": 8080,
 }
 
@@ -90,7 +88,6 @@ def interactive_setup(saved_cfg=None):
         print("   Threshold : {}".format(saved_cfg.get("threshold", 4)))
         print("   Lat warn  : {}ms".format(saved_cfg.get("lat_warn", 100)))
         print("   DNS       : {}".format(saved_cfg.get("enable_dns", True)))
-        print("   Beep      : {}".format(saved_cfg.get("enable_beep", False)))
         print("   Web port  : {}".format(saved_cfg.get("web_port", 8080)))
         use_saved = prompt_yes_no(" Use saved config?", "Y")
 
@@ -115,8 +112,6 @@ def interactive_setup(saved_cfg=None):
     cfg["enable_dns"] = prompt_yes_no(" Enable DNS health check?", "Y")
     if cfg["enable_dns"]:
         cfg["dns_target"] = prompt_default(" DNS test hostname", cfg["dns_target"])
-
-    cfg["enable_beep"] = prompt_yes_no(" Audible alert on drop?", "N")
 
     web_port = prompt_default(" Web dashboard port", cfg["web_port"])
     cfg["web_port"] = int(web_port)
