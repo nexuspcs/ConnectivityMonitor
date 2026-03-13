@@ -1,6 +1,6 @@
 # Connectivity Monitor
 
-A real-time network monitoring tool that tracks latency, detects outages, and gives you the data to prove your ISP is dropping the ball. Runs on **Windows** (PowerShell) and **Linux / macOS / Raspberry Pi** (Python).
+A real-time network monitoring tool that tracks latency, detects outages, and gives you the data to prove your ISP is dropping the ball. Available for **Windows** (PowerShell), **macOS** (Bash), and **Linux / Raspberry Pi** (Python).
 
 Built out of frustration with flaky ISPs and mysterious Wi-Fi drops. If you've ever wanted to prove to your ISP that yes, the connection *is* dropping, this tool gives you the data to back it up.
 
@@ -15,7 +15,7 @@ Built out of frustration with flaky ISPs and mysterious Wi-Fi drops. If you've e
 
 Connectivity Monitor continuously pings targets (Cloudflare, Google DNS, OpenDNS by default), tracks latency and packet loss, detects outages, and logs everything to CSV. When it detects problems, it tells you *what's* wrong: whether it's your gateway, your ISP, DNS, or the target itself.
 
-### Key features
+### Key Features
 
 - **Live dashboard** with 5 tabs — overview, latency graph, drop log, per-target stats, and a heatmap
 - **Smart diagnostics** — automatically figures out where the problem is (local network, gateway, ISP, DNS)
@@ -28,8 +28,21 @@ Connectivity Monitor continuously pings targets (Cloudflare, Google DNS, OpenDNS
 - **Built-in web server** — live auto-refreshing dashboard accessible from any browser on your network (Python version)
 
 ---
+
 <img width="1421" height="1196" alt="image" src="https://github.com/user-attachments/assets/df128d6b-5e5b-4900-b4fc-a21498a57377" />
 <img width="1337" height="741" alt="image" src="https://github.com/user-attachments/assets/56d99d9e-d255-4d27-8df9-14674edf6c10" />
+
+---
+
+## Platform Support
+
+| Platform | Version | Directory | Details |
+|----------|---------|-----------|---------|
+| **Windows** | PowerShell terminal dashboard | [`windows/`](windows/) | [Windows README](windows/README.md) |
+| **macOS** | Bash terminal dashboard | [`macos/`](macos/) | [macOS README](macos/README.md) |
+| **Linux / Raspberry Pi** | Python web dashboard | [`python/`](python/) | [Python README](python/README.md) |
+
+Each platform directory contains a self-contained implementation with its own documentation. See the platform-specific READMEs for detailed setup instructions.
 
 ---
 
@@ -41,20 +54,35 @@ Connectivity Monitor continuously pings targets (Cloudflare, Google DNS, OpenDNS
 
 ```powershell
 git clone https://github.com/nexuspcs/ConnectivityMonitor.git
-cd ConnectivityMonitor
+cd ConnectivityMonitor\windows
 Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 .\ConnectivityDropMonitor.ps1
 ```
 
 Follow the setup prompts — pick your network adapter, set your ping targets, and you're live. The tabbed terminal dashboard starts immediately.
 
-### Linux / macOS / Raspberry Pi (Python)
+> 📖 Full details: [windows/README.md](windows/README.md)
+
+### macOS (Bash)
+
+**Requirements:** macOS, Bash 3.2+, python3
+
+```bash
+git clone https://github.com/nexuspcs/ConnectivityMonitor.git
+cd ConnectivityMonitor/macos
+chmod +x ConnectivityDropMonitor.sh
+./ConnectivityDropMonitor.sh
+```
+
+> 📖 Full details: [macos/README.md](macos/README.md)
+
+### Linux / Raspberry Pi (Python)
 
 **Requirements:** Python 3.6+ (no external dependencies — stdlib only)
 
 ```bash
 git clone https://github.com/nexuspcs/ConnectivityMonitor.git
-cd ConnectivityMonitor
+cd ConnectivityMonitor/python
 python3 -m connectivity_monitor
 ```
 
@@ -76,7 +104,7 @@ Then access the live dashboard from any device on your network at `http://<devic
 
 ```bash
 # Copy the service file
-sudo cp connectivity-monitor@.service /etc/systemd/system/
+sudo cp python/connectivity-monitor@.service /etc/systemd/system/
 
 # Enable and start (replace YOUR_USER with your username)
 sudo systemctl enable connectivity-monitor@YOUR_USER
@@ -85,6 +113,8 @@ sudo systemctl start connectivity-monitor@YOUR_USER
 # Check status
 sudo systemctl status connectivity-monitor@YOUR_USER
 ```
+
+> 📖 Full details: [python/README.md](python/README.md)
 
 ---
 
@@ -104,11 +134,13 @@ On first run, you'll be prompted to configure:
 
 Config is saved to `~/ConnectivityMonitor/monitor_config.json` (or `%USERPROFILE%\ConnectivityMonitor\` on Windows) and reused on next run.
 
+> 📖 Full configuration guide: [docs/CONFIGURATION.md](docs/CONFIGURATION.md)
+
 ---
 
 ## Dashboard Tabs
 
-Both versions have 5 tabs with the same information:
+All versions have 5 tabs with the same information:
 
 | Tab | Content |
 |---|---|
@@ -118,7 +150,7 @@ Both versions have 5 tabs with the same information:
 | **Targets** | Per-target breakdown showing loss, avg, min, max for each ping target |
 | **Heatmap** | 24-hour heatmap of average latency — spot time-of-day patterns |
 
-**PowerShell version:** Switch tabs with `1`-`5` keys. Press `P` to pause, `R` to reset, `E` to export, `Q` to quit.
+**PowerShell / macOS versions:** Switch tabs with `1`–`5` keys. Press `P` to pause, `R` to reset, `E` to export, `Q` to quit.
 
 **Python version:** Click tabs in the web dashboard. Auto-refreshes every 3 seconds.
 
@@ -141,20 +173,7 @@ The Python version includes a built-in HTTP server that serves:
 
 Access from any device on your network: `http://<device-ip>:8080`
 
----
-
-## CLI Options (Python version)
-
-```
-python3 -m connectivity_monitor [OPTIONS]
-
-Options:
-  --headless              Run without interactive prompts
-  --targets TARGETS       Comma-separated ping targets
-  --poll SECONDS          Poll interval (default: 2)
-  --threshold N           Consecutive failures for outage (default: 4)
-  --web-port PORT         Web dashboard port (default: 8080)
-```
+> 📖 Full API reference: [docs/API.md](docs/API.md)
 
 ---
 
@@ -190,26 +209,61 @@ Logs rotate daily. HTML reports are generated automatically every 500 pings and 
 
 ---
 
-## Project Structure
+## Repository Structure
 
 ```
 ConnectivityMonitor/
-├── ConnectivityDropMonitor.ps1        # Windows PowerShell version (2132 lines)
-├── connectivity_monitor.py            # Python wrapper script
-├── connectivity_monitor/              # Python package (cross-platform)
-│   ├── __init__.py                    # Package init
-│   ├── __main__.py                    # CLI entry point
-│   ├── config.py                      # Configuration management
-│   ├── state.py                       # Global monitor state
-│   ├── network.py                     # Ping, DNS, gateway, traceroute
-│   ├── metrics.py                     # Statistics, health score, trend
-│   ├── csv_logger.py                  # CSV logging with daily rotation
-│   ├── html_report.py                 # HTML report generation
-│   ├── web_server.py                  # Built-in HTTP server + live dashboard
-│   └── monitor.py                     # Main monitoring loop
-├── connectivity-monitor@.service      # systemd service file for Linux
-└── README.md
+├── windows/                              # Windows PowerShell version
+│   ├── ConnectivityDropMonitor.ps1       #   Main script (2132 lines)
+│   └── README.md                         #   Windows-specific documentation
+├── macos/                                # macOS Bash version
+│   ├── ConnectivityDropMonitor.sh        #   Main entry point
+│   ├── lib/                              #   Modular library files
+│   │   ├── state.sh                      #     Global state variables
+│   │   ├── config.sh                     #     Configuration management
+│   │   ├── network.sh                    #     Ping, DNS, gateway, traceroute
+│   │   ├── metrics.sh                    #     Statistics and health scoring
+│   │   ├── display.sh                    #     Graph and display builders
+│   │   ├── tabs.sh                       #     Tab bar and view builders
+│   │   └── logging.sh                    #     CSV logging and HTML reports
+│   └── README.md                         #   macOS-specific documentation
+├── python/                               # Cross-platform Python version
+│   ├── connectivity_monitor/             #   Main package
+│   │   ├── __init__.py                   #     Package metadata
+│   │   ├── __main__.py                   #     CLI entry point
+│   │   ├── config.py                     #     Configuration management
+│   │   ├── state.py                      #     Global monitor state
+│   │   ├── network.py                    #     Ping, DNS, gateway, traceroute
+│   │   ├── metrics.py                    #     Statistics and health scoring
+│   │   ├── csv_logger.py                 #     CSV logging with daily rotation
+│   │   ├── html_report.py                #     HTML report generation
+│   │   ├── web_server.py                 #     Built-in HTTP server + dashboard
+│   │   └── monitor.py                    #     Main monitoring loop
+│   ├── connectivity_monitor.py           #   Wrapper script
+│   ├── connectivity-monitor@.service     #   systemd service file for Linux
+│   └── README.md                         #   Python-specific documentation
+├── docs/                                 # Documentation
+│   ├── CONFIGURATION.md                  #   Configuration guide
+│   └── API.md                            #   Web dashboard & API reference
+├── README.md                             # This file
+├── CONTRIBUTING.md                       # Contribution guidelines
+└── CODE_OF_CONDUCT.md                    # Community code of conduct
 ```
+
+---
+
+## Documentation
+
+| Document | Description |
+|----------|-------------|
+| [README.md](README.md) | Project overview and quick start (this file) |
+| [windows/README.md](windows/README.md) | Windows PowerShell setup and usage |
+| [macos/README.md](macos/README.md) | macOS Bash setup and usage |
+| [python/README.md](python/README.md) | Python cross-platform setup, CLI options, and Raspberry Pi guide |
+| [docs/CONFIGURATION.md](docs/CONFIGURATION.md) | Full configuration reference and CSV log format |
+| [docs/API.md](docs/API.md) | Web dashboard and JSON API reference |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | How to contribute to the project |
+| [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) | Community code of conduct |
 
 ---
 
@@ -220,6 +274,8 @@ This project is open source and contributions are welcome — code, documentatio
 - **Fork the repo** and make your changes
 - **Open a pull request** with a clear description of what you changed and why
 - **Report bugs** by opening an issue — include what you were doing, what happened, and what you expected
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for full guidelines.
 
 If you find this useful, **give it a star** — it helps other people find it and motivates continued development.
 
