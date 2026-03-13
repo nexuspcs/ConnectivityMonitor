@@ -69,7 +69,7 @@ rr=0
 enable_beep=0
 
 # Directory setup
-CM_BASE_DIR="$HOME/ConnectivityMonitor"
+CM_BASE_DIR="$HOME/Documents/ConnectivityMonitor"
 CM_LOGS_DIR="$CM_BASE_DIR/logs"
 CM_REPORTS_DIR="$CM_BASE_DIR/reports"
 CM_CONFIG_PATH="$CM_BASE_DIR/monitor_config.json"
