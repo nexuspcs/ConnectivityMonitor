@@ -42,14 +42,14 @@ def _make_handler(state, reports_dir, logs_dir):
                 self._serve_api_targets()
             elif path == "/api/heatmap":
                 self._serve_api_heatmap()
-            elif path.startswith("/reports/"):
-                self._serve_file(reports_dir, path[9:], "text/html")
-            elif path.startswith("/logs/"):
-                self._serve_file(logs_dir, path[6:], "text/csv")
             elif path == "/reports" or path == "/reports/":
                 self._serve_file_list(reports_dir, "HTML Reports", "/reports/")
             elif path == "/logs" or path == "/logs/":
                 self._serve_file_list(logs_dir, "CSV Log Files", "/logs/")
+            elif path.startswith("/reports/") and len(path) > 9:
+                self._serve_file(reports_dir, path[9:], "text/html")
+            elif path.startswith("/logs/") and len(path) > 6:
+                self._serve_file(logs_dir, path[6:], "text/csv")
             else:
                 self._send(404, "text/plain", "Not Found")
 
