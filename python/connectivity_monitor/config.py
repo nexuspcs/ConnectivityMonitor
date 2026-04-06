@@ -17,6 +17,26 @@ DEFAULTS = {
 }
 
 
+def _normalize_targets(targets):
+    """Split and clean a comma-separated targets string."""
+    if not targets:
+        return []
+    return [t.strip() for t in str(targets).split(",") if t.strip()]
+
+
+def _require_positive_int(value, label, minimum=1, maximum=None):
+    """Validate integer bounds and return the coerced value."""
+    try:
+        num = int(value)
+    except (TypeError, ValueError):
+        raise ValueError("{} must be an integer.".format(label))
+    if num < minimum:
+        raise ValueError("{} must be at least {}.".format(label, minimum))
+    if maximum is not None and num > maximum:
+        raise ValueError("{} must be at most {}.".format(label, maximum))
+    return num
+
+
 def get_base_dir():
     """Return base directory for logs/reports/config."""
     home = os.path.expanduser("~")
@@ -134,7 +154,57 @@ def headless_config(args):
         cfg["poll"] = args.poll
     if args.threshold:
         cfg["threshold"] = args.threshold
+    if args.lat_warn is not None:
+        cfg["lat_warn"] = args.lat_warn
+    if args.enable_dns is not None:
+        cfg["enable_dns"] = args.enable_dns
+    if args.dns_target:
+        cfg["dns_target"] = args.dns_target
     if args.web_port is not None:
         cfg["web_port"] = args.web_port
+
+    return cfg
+
+
+def validate_config(cfg):
+    """
+    Validate and normalize configuration.
+
+    Ensures numeric fields are positive, port is within range, targets are
+    present, and DNS settings are consistent. Returns the validated config
+    (mutating the original dict).
+    """
+    cfg["poll"] = _require_positive_int(
+        cfg.get("poll", DEFAULTS["poll"]), "Poll interval (seconds)"
+    )
+    cfg["threshold"] = _require_positive_int(
+        cfg.get("threshold", DEFAULTS["threshold"]),
+        "Failure threshold",
+    )
+    cfg["lat_warn"] = _require_positive_int(
+        cfg.get("lat_warn", DEFAULTS["lat_warn"]),
+        "Latency warning threshold (ms)",
+    )
+    cfg["web_port"] = _require_positive_int(
+        cfg.get("web_port", DEFAULTS["web_port"]),
+        "Web dashboard port",
+        maximum=65535,
+    )
+
+    targets = _normalize_targets(cfg.get("targets", DEFAULTS["targets"]))
+    if not targets:
+        raise ValueError("At least one ping target is required (e.g. 1.1.1.1).")
+    cfg["targets"] = ",".join(targets)
+
+    enable_dns = cfg.get("enable_dns", True)
+    if isinstance(enable_dns, str):
+        enable_dns = enable_dns.lower() not in ("false", "0", "no", "off")
+    cfg["enable_dns"] = bool(enable_dns)
+
+    if cfg["enable_dns"]:
+        dns_target = cfg.get("dns_target", DEFAULTS["dns_target"])
+        if not dns_target or not str(dns_target).strip():
+            raise ValueError("DNS health check is enabled but no DNS hostname is set.")
+        cfg["dns_target"] = str(dns_target).strip()
 
     return cfg

@@ -47,6 +47,10 @@ Options:
   --targets TARGETS       Comma-separated ping targets (e.g. 1.1.1.1,8.8.8.8)
   --poll SECONDS          Poll interval in seconds (default: 2)
   --threshold N           Consecutive failures to declare an outage (default: 4)
+  --lat-warn MS           High-latency warning threshold in milliseconds (default: 100)
+  --enable-dns            Force-enable DNS health checks (overrides saved config)
+  --disable-dns           Disable DNS health checks
+  --dns-target HOST       Hostname to resolve for DNS checks (default: google.com)
   --web-port PORT         Web dashboard port (default: 8080)
 ```
 
@@ -64,6 +68,9 @@ python3 -m connectivity_monitor --headless --targets 1.1.1.1,8.8.8.8 --web-port 
 
 # Adjust poll interval and threshold
 python3 -m connectivity_monitor --headless --poll 5 --threshold 3
+
+# Tune latency alerts and DNS checks
+python3 -m connectivity_monitor --headless --lat-warn 80 --disable-dns --targets 1.1.1.1,9.9.9.9
 ```
 
 ## Web Dashboard & API
