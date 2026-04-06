@@ -195,7 +195,7 @@ function GetLocalIP($alias) {
 
 function DetectPublicIP {
     try {
-        $resp = Invoke-RestMethod -Uri "http://ip-api.com/json" -TimeoutSec 5 -ErrorAction Stop
+        $resp = Invoke-RestMethod -Uri "https://ip-api.com/json" -TimeoutSec 5 -ErrorAction Stop
         $script:publicIP = $resp.query
         $script:ispName = $resp.isp
     }

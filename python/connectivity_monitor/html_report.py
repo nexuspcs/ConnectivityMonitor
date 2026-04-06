@@ -4,6 +4,7 @@ Matches the exact HTML structure and CSS from ConnectivityDropMonitor.ps1.
 """
 
 import datetime
+import html
 import os
 
 from . import metrics
@@ -141,7 +142,11 @@ def generate_html_report(state, report_file):
     report_gen_str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     total_lost = state.total_pings - state.total_success
 
-    html = _build_html(
+    # Escape external/user-supplied strings before injecting into HTML
+    safe_isp = html.escape(str(state.isp_name))
+    safe_public_ip = html.escape(str(state.public_ip))
+
+    html_out = _build_html(
         labels_js=labels_js, data_js=data_js, gw_js=gw_js, hist_js=hist_js,
         target_rows=target_rows, drops_table=drops_table, breach_table=breach_table,
         heatmap_html=heatmap_html, report_date=report_date,
@@ -152,14 +157,14 @@ def generate_html_report(state, report_file):
         total_downtime=total_downtime, baseline_text=baseline_text,
         health_css=health_css, uptime_css=uptime_css, avg_css=avg_css,
         loss_css=loss_css, jitter_css=jitter_css, drops_css=drops_css,
-        drops_count=len(state.drops), isp=state.isp_name, public_ip=state.public_ip,
+        drops_count=len(state.drops), isp=safe_isp, public_ip=safe_public_ip,
     )
 
     d = os.path.dirname(report_file)
     if d:
         os.makedirs(d, exist_ok=True)
     with open(report_file, "w", encoding="utf-8") as f:
-        f.write(html)
+        f.write(html_out)
 
 
 def _score_color(value, thresholds, default):
@@ -190,7 +195,7 @@ def _build_target_rows(state):
         rows += (
             "<tr{}><td>{}</td><td>{}</td><td>{}</td><td>{}%</td>"
             "<td>{}ms</td><td>{}ms</td><td>{}ms</td></tr>\n"
-        ).format(cls, t, info["sent"], info["ok"], t_loss, t_avg, t_min, t_max)
+        ).format(cls, html.escape(t), info["sent"], info["ok"], t_loss, t_avg, t_min, t_max)
     return rows
 
 
@@ -206,7 +211,14 @@ def _build_drop_rows(state):
             cls = ' class="warn"'
         rows += (
             "<tr{}><td>{}</td><td>{}</td><td>{}s</td><td>{}</td><td>{}</td></tr>\n"
-        ).format(cls, d["Start"], d["End"], d["Duration"], d["Target"], d["Diagnosis"])
+        ).format(
+            cls,
+            html.escape(str(d["Start"])),
+            html.escape(str(d["End"])),
+            d["Duration"],
+            html.escape(str(d["Target"])),
+            html.escape(str(d["Diagnosis"])),
+        )
     return rows
 
 
