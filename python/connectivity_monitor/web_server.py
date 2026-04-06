@@ -1,6 +1,7 @@
 """Built-in HTTP web server — live dashboard, JSON API, file serving."""
 
 import datetime
+import html
 import json
 import os
 import threading
@@ -154,6 +155,14 @@ def _make_handler(state, reports_dir, logs_dir):
             # Sanitize filename to prevent path traversal
             safe_name = os.path.basename(filename)
             filepath = os.path.join(base_dir, safe_name)
+
+            # Verify the resolved path is still within the base directory
+            real_base = os.path.realpath(base_dir)
+            real_file = os.path.realpath(filepath)
+            if not real_file.startswith(real_base + os.sep):
+                self._send(403, "text/plain", "Forbidden")
+                return
+
             if os.path.isfile(filepath):
                 with open(filepath, "rb") as f:
                     self._send(200, content_type, f.read())
@@ -167,13 +176,15 @@ def _make_handler(state, reports_dir, logs_dir):
                 files = sorted(os.listdir(directory), reverse=True)
             items = ""
             for f in files:
+                # HTML-escape filenames to prevent XSS
+                safe_f = html.escape(f)
                 items += '<li><a href="{}{}">{}</a></li>\n'.format(
-                    url_prefix, f, f
+                    url_prefix, safe_f, safe_f
                 )
             if not items:
                 items = "<li>No files yet</li>"
-            html = _file_list_html(title, items)
-            self._send(200, "text/html", html)
+            html_content = _file_list_html(title, items)
+            self._send(200, "text/html", html_content)
 
         def _serve_dashboard(self):
             """Serve the live auto-refreshing dashboard."""

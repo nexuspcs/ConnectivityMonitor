@@ -78,7 +78,7 @@ get_local_ip() {
 # ================================================================
 detect_public_ip() {
     local resp
-    resp=$(curl -s --connect-timeout 5 --max-time 8 "http://ip-api.com/json" 2>/dev/null)
+    resp=$(curl -s --connect-timeout 5 --max-time 8 "https://ip-api.com/json" 2>/dev/null)
     if [[ -n "$resp" ]]; then
         public_ip=$(echo "$resp" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('query','N/A'))" 2>/dev/null)
         isp_name=$(echo "$resp" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('isp','N/A'))" 2>/dev/null)

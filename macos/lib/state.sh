@@ -64,7 +64,8 @@ last_wifi_sig=""
 last_trace_time=0
 trace_pid=""
 trace_target=""
-trace_outfile="/tmp/cm_traceroute_$$.txt"
+# Use mktemp for secure temporary file creation
+trace_outfile=$(mktemp 2>/dev/null) || trace_outfile="/tmp/cm_traceroute_$$_${RANDOM}.txt"
 rr=0
 enable_beep=0
 
