@@ -3,7 +3,13 @@
 import argparse
 import sys
 
-from .config import load_config, interactive_setup, headless_config, ensure_dirs
+from .config import (
+    load_config,
+    interactive_setup,
+    headless_config,
+    ensure_dirs,
+    validate_config,
+)
 from .monitor import run_monitor
 
 
@@ -36,6 +42,23 @@ Examples:
         help="Consecutive failures to declare an outage (default: 4)",
     )
     parser.add_argument(
+        "--lat-warn", type=int, dest="lat_warn", default=None,
+        help="Latency threshold in ms for warning/high-latency events (default: 100)",
+    )
+    dns_group = parser.add_mutually_exclusive_group()
+    dns_group.add_argument(
+        "--enable-dns", dest="enable_dns", action="store_true", default=None,
+        help="Force-enable DNS health checks (overrides saved config)",
+    )
+    dns_group.add_argument(
+        "--disable-dns", dest="enable_dns", action="store_false",
+        help="Disable DNS health checks",
+    )
+    parser.add_argument(
+        "--dns-target", type=str, dest="dns_target", default=None,
+        help="Hostname to resolve for DNS checks (default: google.com)",
+    )
+    parser.add_argument(
         "--web-port", type=int, default=None, dest="web_port",
         help="Web dashboard port (default: 8080)",
     )
@@ -51,6 +74,11 @@ Examples:
         saved = load_config()
         cfg = interactive_setup(saved)
         cfg["headless"] = False
+
+    try:
+        cfg = validate_config(cfg)
+    except ValueError as exc:
+        parser.error(str(exc))
 
     run_monitor(cfg)
 
