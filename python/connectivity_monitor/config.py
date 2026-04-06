@@ -2,6 +2,7 @@
 
 import json
 import os
+import re
 import sys
 
 
@@ -19,6 +20,10 @@ DEFAULTS = {
 
 def get_base_dir():
     """Return base directory for logs/reports/config."""
+    # Check environment variable first for user customization
+    base = os.getenv("CM_BASE_DIR")
+    if base:
+        return os.path.expanduser(base)
     home = os.path.expanduser("~")
     return os.path.join(home, "ConnectivityMonitor")
 
@@ -44,7 +49,9 @@ def load_config():
         try:
             with open(path, "r") as f:
                 return json.load(f)
-        except Exception:
+        except (json.JSONDecodeError, IOError, OSError) as e:
+            # Invalid JSON or file read errors
+            print(f"Warning: Could not load config from {path}: {e}", file=sys.stderr)
             return None
     return None
 
@@ -69,6 +76,36 @@ def prompt_yes_no(prompt, default="Y"):
     if not val:
         val = default
     return val.upper().startswith("Y")
+
+
+def validate_hostname(hostname):
+    """Validate hostname format (basic check)."""
+    if not hostname or len(hostname) > 253:
+        return False
+    # Basic hostname regex: alphanumeric, hyphens, dots
+    pattern = r'^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$'
+    return bool(re.match(pattern, hostname))
+
+
+def validate_targets(targets):
+    """Validate comma-separated ping targets."""
+    import ipaddress
+    if not targets:
+        return False
+    target_list = [t.strip() for t in targets.split(",")]
+    if not target_list:
+        return False
+    for target in target_list:
+        # Try to parse as IP address first
+        try:
+            ipaddress.ip_address(target)
+            continue
+        except ValueError:
+            pass
+        # Otherwise validate as hostname
+        if not validate_hostname(target):
+            return False
+    return True
 
 
 def interactive_setup(saved_cfg=None):
@@ -97,24 +134,77 @@ def interactive_setup(saved_cfg=None):
         return cfg
 
     cfg = dict(DEFAULTS)
-    poll = prompt_default(" Poll interval (seconds)", cfg["poll"])
-    cfg["poll"] = int(poll)
 
-    threshold = prompt_default(" Failure threshold for drop", cfg["threshold"])
-    cfg["threshold"] = int(threshold)
+    # Poll interval validation
+    while True:
+        try:
+            poll = prompt_default(" Poll interval (seconds)", cfg["poll"])
+            poll_val = float(poll)
+            if 0.1 <= poll_val <= 3600:
+                cfg["poll"] = poll_val
+                break
+            else:
+                print("   Error: Poll interval must be between 0.1 and 3600 seconds")
+        except ValueError:
+            print("   Error: Please enter a valid number")
 
-    targets = prompt_default(" Ping targets (comma-sep)", cfg["targets"])
-    cfg["targets"] = targets
+    # Failure threshold validation
+    while True:
+        try:
+            threshold = prompt_default(" Failure threshold for drop", cfg["threshold"])
+            threshold_val = int(threshold)
+            if 1 <= threshold_val <= 100:
+                cfg["threshold"] = threshold_val
+                break
+            else:
+                print("   Error: Threshold must be between 1 and 100")
+        except ValueError:
+            print("   Error: Please enter a valid integer")
 
-    lat_warn = prompt_default(" Latency warning (ms)", cfg["lat_warn"])
-    cfg["lat_warn"] = int(lat_warn)
+    # Ping targets validation
+    while True:
+        targets = prompt_default(" Ping targets (comma-sep)", cfg["targets"])
+        if validate_targets(targets):
+            cfg["targets"] = targets
+            break
+        else:
+            print("   Error: Invalid target format. Use IP addresses or hostnames (comma-separated)")
+
+    # Latency warning validation
+    while True:
+        try:
+            lat_warn = prompt_default(" Latency warning (ms)", cfg["lat_warn"])
+            lat_val = int(lat_warn)
+            if 1 <= lat_val <= 10000:
+                cfg["lat_warn"] = lat_val
+                break
+            else:
+                print("   Error: Latency warning must be between 1 and 10000 ms")
+        except ValueError:
+            print("   Error: Please enter a valid integer")
 
     cfg["enable_dns"] = prompt_yes_no(" Enable DNS health check?", "Y")
     if cfg["enable_dns"]:
-        cfg["dns_target"] = prompt_default(" DNS test hostname", cfg["dns_target"])
+        while True:
+            dns_target = prompt_default(" DNS test hostname", cfg["dns_target"])
+            if validate_hostname(dns_target):
+                cfg["dns_target"] = dns_target
+                break
+            else:
+                print("   Error: Invalid hostname format")
 
-    web_port = prompt_default(" Web dashboard port", cfg["web_port"])
-    cfg["web_port"] = int(web_port)
+    # Web port validation
+    while True:
+        try:
+            web_port = prompt_default(" Web dashboard port", cfg["web_port"])
+            port_val = int(web_port)
+            if 1 <= port_val <= 65535:
+                cfg["web_port"] = port_val
+                break
+            else:
+                print("   Error: Port must be between 1 and 65535")
+        except ValueError:
+            print("   Error: Please enter a valid port number")
 
     save_config(cfg)
     print(" Config saved to {}".format(get_config_path()))

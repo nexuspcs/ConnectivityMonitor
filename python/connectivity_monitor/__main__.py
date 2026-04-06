@@ -3,6 +3,12 @@
 import argparse
 import sys
 
+# Check Python version before importing other modules
+if sys.version_info < (3, 6):
+    sys.exit("Error: Python 3.6+ is required. You are using Python {}.{}.{}".format(
+        sys.version_info.major, sys.version_info.minor, sys.version_info.micro
+    ))
+
 from .config import load_config, interactive_setup, headless_config, ensure_dirs
 from .monitor import run_monitor
 

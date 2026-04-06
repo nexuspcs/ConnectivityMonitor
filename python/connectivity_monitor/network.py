@@ -40,7 +40,8 @@ def ping_test(target, timeout=2):
             # Got response but couldn't parse latency — still ok
             return {"ok": True, "lat": 0, "target": target, "time": ts}
         return {"ok": False, "lat": None, "target": target, "time": ts}
-    except Exception:
+    except (subprocess.TimeoutExpired, subprocess.SubprocessError, OSError, ValueError) as e:
+        # Network errors, command failures, or parsing errors
         return {"ok": False, "lat": None, "target": target, "time": ts}
 
 
@@ -51,7 +52,8 @@ def dns_test(hostname):
         socket.getaddrinfo(hostname, None)
         elapsed = (time.monotonic() - start) * 1000
         return {"ok": True, "ms": round(elapsed, 1)}
-    except Exception:
+    except (socket.gaierror, socket.timeout, OSError) as e:
+        # DNS resolution failures
         return {"ok": False, "ms": None}
 
 
@@ -82,7 +84,8 @@ def detect_gateway():
             m = re.search(r"Default Gateway.*?:\s*([\d.]+)", out.stdout)
             if m:
                 return m.group(1)
-    except Exception:
+    except (subprocess.TimeoutExpired, subprocess.SubprocessError, OSError) as e:
+        # Command execution failures
         pass
     return "N/A"
 
@@ -90,12 +93,13 @@ def detect_gateway():
 def get_local_ip():
     """Get local IP address of the machine."""
     try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
-        ip = s.getsockname()[0]
-        s.close()
-        return ip
-    except Exception:
+        # Use context manager for automatic socket cleanup
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.connect(("8.8.8.8", 80))
+            ip = s.getsockname()[0]
+            return ip
+    except (socket.error, OSError) as e:
+        # Network/socket errors
         return "N/A"
 
 
@@ -112,7 +116,8 @@ def detect_public_ip(state):
             data = json_mod.loads(resp.read().decode())
             state.public_ip = data.get("query", "N/A")
             state.isp_name = data.get("isp", "N/A")
-    except Exception:
+    except (urllib.error.URLError, urllib.error.HTTPError, OSError, ValueError) as e:
+        # Network errors or JSON parsing failures
         state.public_ip = "N/A"
         state.isp_name = "N/A"
 
