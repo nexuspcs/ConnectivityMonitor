@@ -1,5 +1,6 @@
 """Metrics engine — loss, avg, min, max, percentile, jitter, health, trend."""
 
+import datetime
 import math
 
 
@@ -72,23 +73,23 @@ def uptime(state):
 
 def get_health_score(state):
     """Health score 0-100 with letter grade. Returns {score, grade, color}."""
-    l = loss(state)
-    a = avg(state)
-    j = jitter(state)
+    loss_pct = loss(state)
+    avg_lat = avg(state)
+    jitter_ms = jitter(state)
     score = 100
 
-    score -= l * 3
-    if a > 100:
+    score -= loss_pct * 3
+    if avg_lat > 100:
         score -= 20
-    elif a > 50:
+    elif avg_lat > 50:
         score -= 10
-    elif a > 30:
+    elif avg_lat > 30:
         score -= 5
-    if j > 30:
+    if jitter_ms > 30:
         score -= 15
-    elif j > 15:
+    elif jitter_ms > 15:
         score -= 8
-    elif j > 5:
+    elif jitter_ms > 5:
         score -= 3
 
     score = max(0, min(100, round(score)))
@@ -171,7 +172,6 @@ def get_network_weather(state):
 
 def update_history(state, lat, target):
     """Add a ping result to history and update per-target stats."""
-    import datetime
     entry = {
         "time": datetime.datetime.now(),
         "latency": lat,
@@ -205,7 +205,6 @@ def update_history(state, lat, target):
 
 def update_gw_history(state, gw_lat):
     """Add a gateway ping result to gateway history."""
-    import datetime
     entry = {"time": datetime.datetime.now(), "latency": gw_lat}
     state.gw_history.append(entry)
     while len(state.gw_history) > 200:
@@ -216,7 +215,6 @@ def update_hourly_data(state, lat):
     """Record latency data for hourly heatmap."""
     if lat is None:
         return
-    import datetime
     hour = datetime.datetime.now().hour
     if hour not in state.hourly_data:
         state.hourly_data[hour] = []

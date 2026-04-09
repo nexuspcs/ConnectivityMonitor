@@ -58,17 +58,28 @@ def save_config(cfg):
 
 
 def prompt_default(prompt, default):
-    """Prompt user with a default value."""
+    """Prompt user with a default value. Returns the user's input or the default."""
     val = input("{} [{}]: ".format(prompt, default)).strip()
     return val if val else str(default)
 
 
 def prompt_yes_no(prompt, default="Y"):
-    """Prompt user for yes/no."""
+    """Prompt user for yes/no. Returns True for yes, False for no."""
     val = input("{} [{}]: ".format(prompt, default)).strip()
     if not val:
         val = default
     return val.upper().startswith("Y")
+
+
+def _prompt_int(prompt, default):
+    """Prompt user for an integer, re-prompting on invalid input."""
+    while True:
+        raw = input("{} [{}]: ".format(prompt, default)).strip()
+        val = raw if raw else str(default)
+        try:
+            return int(val)
+        except ValueError:
+            print(" Invalid value '{}' — please enter a whole number.".format(val))
 
 
 def interactive_setup(saved_cfg=None):
@@ -97,24 +108,19 @@ def interactive_setup(saved_cfg=None):
         return cfg
 
     cfg = dict(DEFAULTS)
-    poll = prompt_default(" Poll interval (seconds)", cfg["poll"])
-    cfg["poll"] = int(poll)
-
-    threshold = prompt_default(" Failure threshold for drop", cfg["threshold"])
-    cfg["threshold"] = int(threshold)
+    cfg["poll"] = _prompt_int(" Poll interval (seconds)", cfg["poll"])
+    cfg["threshold"] = _prompt_int(" Failure threshold for drop", cfg["threshold"])
 
     targets = prompt_default(" Ping targets (comma-sep)", cfg["targets"])
     cfg["targets"] = targets
 
-    lat_warn = prompt_default(" Latency warning (ms)", cfg["lat_warn"])
-    cfg["lat_warn"] = int(lat_warn)
+    cfg["lat_warn"] = _prompt_int(" Latency warning (ms)", cfg["lat_warn"])
 
     cfg["enable_dns"] = prompt_yes_no(" Enable DNS health check?", "Y")
     if cfg["enable_dns"]:
         cfg["dns_target"] = prompt_default(" DNS test hostname", cfg["dns_target"])
 
-    web_port = prompt_default(" Web dashboard port", cfg["web_port"])
-    cfg["web_port"] = int(web_port)
+    cfg["web_port"] = _prompt_int(" Web dashboard port", cfg["web_port"])
 
     save_config(cfg)
     print(" Config saved to {}".format(get_config_path()))
@@ -130,9 +136,9 @@ def headless_config(args):
 
     if args.targets:
         cfg["targets"] = args.targets
-    if args.poll:
+    if args.poll is not None:
         cfg["poll"] = args.poll
-    if args.threshold:
+    if args.threshold is not None:
         cfg["threshold"] = args.threshold
     if args.web_port is not None:
         cfg["web_port"] = args.web_port

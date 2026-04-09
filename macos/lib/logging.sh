@@ -47,10 +47,10 @@ log_ping() {
 
 log_drop() {
     local start="$1" end="$2" target="$3" diagnosis="$4"
-    local now_s end_s dur
-    now_s=$(date -j -f "%Y-%m-%d %H:%M:%S" "$end" +%s 2>/dev/null || date +%s)
-    end_s=$(date -j -f "%Y-%m-%d %H:%M:%S" "$start" +%s 2>/dev/null || date +%s)
-    dur=$(awk "BEGIN {printf \"%.2f\", $now_s - $end_s}")
+    local start_s end_s dur
+    start_s=$(date -j -f "%Y-%m-%d %H:%M:%S" "$start" +%s 2>/dev/null || date +%s)
+    end_s=$(date -j -f "%Y-%m-%d %H:%M:%S" "$end" +%s 2>/dev/null || date +%s)
+    dur=$(awk "BEGIN {printf \"%.2f\", $end_s - $start_s}")
     if awk "BEGIN {exit !($dur < 0)}"; then dur="0"; fi
 
     drop_starts+=("$start")
@@ -67,10 +67,10 @@ log_drop() {
 
 log_threshold_breach() {
     local start="$1" end="$2" avg_lat="$3"
-    local now_s end_s dur
-    now_s=$(date -j -f "%Y-%m-%d %H:%M:%S" "$end" +%s 2>/dev/null || date +%s)
-    end_s=$(date -j -f "%Y-%m-%d %H:%M:%S" "$start" +%s 2>/dev/null || date +%s)
-    dur=$(awk "BEGIN {printf \"%.2f\", $now_s - $end_s}")
+    local start_s end_s dur
+    start_s=$(date -j -f "%Y-%m-%d %H:%M:%S" "$start" +%s 2>/dev/null || date +%s)
+    end_s=$(date -j -f "%Y-%m-%d %H:%M:%S" "$end" +%s 2>/dev/null || date +%s)
+    dur=$(awk "BEGIN {printf \"%.2f\", $end_s - $start_s}")
     if awk "BEGIN {exit !($dur < 0)}"; then dur="0"; fi
 
     breach_starts+=("$start")
