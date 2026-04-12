@@ -34,7 +34,7 @@ check_date_roll() {
 # ================================================================
 load_config() {
     if [[ -f "$CM_CONFIG_PATH" ]]; then
-        if python3 -c "import json; json.load(open('$CM_CONFIG_PATH'))" 2>/dev/null; then
+        if python3 -c "import json; json.load(open(\"${CM_CONFIG_PATH}\"))" 2>/dev/null; then
             return 0
         fi
     fi
@@ -43,27 +43,52 @@ load_config() {
 
 config_get() {
     local key="$1"
-    python3 -c "import json; d=json.load(open('${CM_CONFIG_PATH}')); print(d.get('${key}',''))" 2>/dev/null
+    # Use printf to safely pass key to Python, avoiding code injection
+    python3 -c "
+import json
+import sys
+key = sys.argv[1]
+with open(\"${CM_CONFIG_PATH}\", 'r') as f:
+    d = json.load(f)
+    print(d.get(key, ''))
+" "$key" 2>/dev/null
 }
 
 save_config() {
     local cfg_adapter="$1" cfg_poll="$2" cfg_threshold="$3" cfg_targets="$4"
     local cfg_latwarn="$5" cfg_enabledns="$6" cfg_dnstarget="$7" cfg_enablebeep="$8"
-    python3 -c "
+    # Use Python script file to avoid shell injection vulnerabilities
+    python3 - "$cfg_adapter" "$cfg_poll" "$cfg_threshold" "$cfg_targets" \
+             "$cfg_latwarn" "$cfg_enabledns" "$cfg_dnstarget" "$cfg_enablebeep" \
+             "${CM_CONFIG_PATH}" <<'PYTHON_SCRIPT'
 import json
+import sys
+
+# Read arguments from command line
+cfg_adapter = sys.argv[1]
+cfg_poll = int(sys.argv[2])
+cfg_threshold = int(sys.argv[3])
+cfg_targets = sys.argv[4]
+cfg_latwarn = int(sys.argv[5])
+cfg_enabledns = sys.argv[6].lower() in ('1', 'true')
+cfg_dnstarget = sys.argv[7]
+cfg_enablebeep = sys.argv[8].lower() in ('1', 'true')
+config_path = sys.argv[9]
+
 d = {
-    'adapter': '${cfg_adapter}',
-    'poll': ${cfg_poll},
-    'threshold': ${cfg_threshold},
-    'targets': '${cfg_targets}',
-    'latWarn': ${cfg_latwarn},
-    'enableDns': bool(${cfg_enabledns}),
-    'dnsTarget': '${cfg_dnstarget}',
-    'enableBeep': bool(${cfg_enablebeep})
+    'adapter': cfg_adapter,
+    'poll': cfg_poll,
+    'threshold': cfg_threshold,
+    'targets': cfg_targets,
+    'latWarn': cfg_latwarn,
+    'enableDns': cfg_enabledns,
+    'dnsTarget': cfg_dnstarget,
+    'enableBeep': cfg_enablebeep
 }
-with open('${CM_CONFIG_PATH}', 'w') as f:
+
+with open(config_path, 'w') as f:
     json.dump(d, f, indent=2)
-" 2>/dev/null
+PYTHON_SCRIPT
 }
 
 # ================================================================

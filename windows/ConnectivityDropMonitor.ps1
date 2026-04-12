@@ -195,7 +195,7 @@ function GetLocalIP($alias) {
 
 function DetectPublicIP {
     try {
-        $resp = Invoke-RestMethod -Uri "http://ip-api.com/json" -TimeoutSec 5 -ErrorAction Stop
+        $resp = Invoke-RestMethod -Uri "https://ip-api.com/json" -TimeoutSec 5 -ErrorAction Stop
         $script:publicIP = $resp.query
         $script:ispName = $resp.isp
     }
@@ -225,7 +225,19 @@ function StartTraceroute($target) {
     $script:lastTraceTime = $now
     $script:traceJob = Start-Job -ScriptBlock {
         param($t)
-        $output = cmd /c "tracert -d -w 500 -h 10 $t" 2>&1
+        # Use ProcessStartInfo to avoid command injection vulnerabilities
+        $psi = New-Object System.Diagnostics.ProcessStartInfo
+        $psi.FileName = "tracert.exe"
+        $psi.Arguments = "-d -w 500 -h 10 $t"
+        $psi.RedirectStandardOutput = $true
+        $psi.RedirectStandardError = $true
+        $psi.UseShellExecute = $false
+        $psi.CreateNoWindow = $true
+        $proc = New-Object System.Diagnostics.Process
+        $proc.StartInfo = $psi
+        $proc.Start() | Out-Null
+        $output = $proc.StandardOutput.ReadToEnd()
+        $proc.WaitForExit()
         return $output
     } -ArgumentList $target
 }

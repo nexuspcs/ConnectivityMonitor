@@ -1,15 +1,42 @@
-"""Metrics engine — loss, avg, min, max, percentile, jitter, health, trend."""
+"""Metrics engine — loss, avg, min, max, percentile, jitter, health, trend.
+
+This module provides statistical analysis of network performance data.
+All functions operate on a MonitorState object which contains ping history.
+
+Key Functions:
+- loss(): Calculate packet loss percentage
+- avg(), min_lat(), max_lat(): Latency statistics
+- percentile(): Calculate percentile latency (e.g., p95, p99)
+- jitter(): Average latency variation between consecutive pings
+- uptime(): Percentage of successful pings
+- get_health_score(): Overall connection health (0-100) with letter grade
+- get_trend(): Trend analysis comparing recent vs baseline performance
+"""
 
 import math
 
 
 def get_latency_values(state):
-    """Extract non-None latency values from history."""
+    """Extract non-None latency values from history.
+
+    Args:
+        state: MonitorState object with ping history
+
+    Returns:
+        List of float latency values (excludes failed pings)
+    """
     return [h["latency"] for h in state.history if h.get("latency") is not None]
 
 
 def loss(state):
-    """Packet loss percentage."""
+    """Calculate packet loss percentage.
+
+    Args:
+        state: MonitorState object
+
+    Returns:
+        float: Packet loss percentage (0-100), rounded to 1 decimal place
+    """
     total = len(state.history)
     if total == 0:
         return 0
@@ -18,7 +45,14 @@ def loss(state):
 
 
 def avg(state):
-    """Average latency of successful pings."""
+    """Calculate average latency of successful pings.
+
+    Args:
+        state: MonitorState object
+
+    Returns:
+        float: Average latency in milliseconds, rounded to 1 decimal place
+    """
     vals = get_latency_values(state)
     if not vals:
         return 0
@@ -26,7 +60,14 @@ def avg(state):
 
 
 def min_lat(state):
-    """Minimum latency."""
+    """Calculate minimum latency.
+
+    Args:
+        state: MonitorState object
+
+    Returns:
+        float: Minimum latency in milliseconds, rounded to 1 decimal place
+    """
     vals = get_latency_values(state)
     if not vals:
         return 0
@@ -34,7 +75,14 @@ def min_lat(state):
 
 
 def max_lat(state):
-    """Maximum latency."""
+    """Calculate maximum latency.
+
+    Args:
+        state: MonitorState object
+
+    Returns:
+        float: Maximum latency in milliseconds, rounded to 1 decimal place
+    """
     vals = get_latency_values(state)
     if not vals:
         return 0
@@ -42,7 +90,15 @@ def max_lat(state):
 
 
 def percentile(state, pct):
-    """Percentile latency (0-100)."""
+    """Calculate percentile latency (e.g., 95th percentile).
+
+    Args:
+        state: MonitorState object
+        pct: Percentile value (0-100)
+
+    Returns:
+        float: Latency at the specified percentile, rounded to 1 decimal place
+    """
     vals = sorted(get_latency_values(state))
     if not vals:
         return 0
@@ -53,7 +109,17 @@ def percentile(state, pct):
 
 
 def jitter(state):
-    """Average latency variation between consecutive pings."""
+    """Calculate average latency variation between consecutive pings.
+
+    Jitter is the average absolute difference between consecutive latency measurements.
+    High jitter indicates unstable network performance.
+
+    Args:
+        state: MonitorState object
+
+    Returns:
+        float: Average jitter in milliseconds, rounded to 1 decimal place
+    """
     vals = get_latency_values(state)
     if len(vals) < 2:
         return 0
@@ -62,7 +128,14 @@ def jitter(state):
 
 
 def uptime(state):
-    """Percentage of successful pings."""
+    """Calculate percentage of successful pings.
+
+    Args:
+        state: MonitorState object
+
+    Returns:
+        float: Uptime percentage (0-100), rounded to 2 decimal places
+    """
     total = len(state.history)
     if total == 0:
         return 100.0
@@ -71,7 +144,29 @@ def uptime(state):
 
 
 def get_health_score(state):
-    """Health score 0-100 with letter grade. Returns {score, grade, color}."""
+    """Calculate overall connection health score with letter grade.
+
+    Health score formula:
+    - Start at 100
+    - Subtract 3 points per 1% packet loss
+    - Subtract points for high average latency (scaled)
+    - Subtract points for high jitter (scaled)
+
+    Grading:
+    - A+: 90-100 (excellent)
+    - A:  80-89  (great)
+    - B:  70-79  (good)
+    - C:  60-69  (fair)
+    - D:  50-59  (poor)
+    - F:  0-49   (failing)
+
+    Args:
+        state: MonitorState object
+
+    Returns:
+        dict: {'score': int (0-100), 'grade': str, 'color': str}
+              where color is suitable for terminal/web display
+    """
     l = loss(state)
     a = avg(state)
     j = jitter(state)
