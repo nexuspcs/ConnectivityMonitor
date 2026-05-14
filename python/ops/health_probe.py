@@ -5,14 +5,17 @@ import argparse
 import datetime
 import json
 import os
+import shlex
 import subprocess
 import sys
 import urllib.error
 import urllib.request
 
+APP_VERSION = "4.0"
+
 
 def _now():
-    return datetime.datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
+    return datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0).isoformat()
 
 
 def _read_state(path):
@@ -24,13 +27,17 @@ def _read_state(path):
 
 
 def _write_state(path, state):
-    os.makedirs(os.path.dirname(path), exist_ok=True)
+    parent = os.path.dirname(path)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(state, f, indent=2)
 
 
 def _fetch_status(url, timeout):
-    req = urllib.request.Request(url, headers={"User-Agent": "ConnectivityMonitor/4.0 health-probe"})
+    req = urllib.request.Request(
+        url, headers={"User-Agent": "ConnectivityMonitor/{} health-probe".format(APP_VERSION)}
+    )
     with urllib.request.urlopen(req, timeout=timeout) as response:
         if response.status != 200:
             raise RuntimeError("Non-200 status: {}".format(response.status))
@@ -56,8 +63,15 @@ def _evaluate(payload, min_health, max_loss):
 def _maybe_reboot(enabled, command, reason):
     if not enabled:
         return
+    safe_cmd = " ".join(shlex.quote(part) for part in command)
     print("[{}] WARNING: {}".format(_now(), reason))
-    print("[{}] WARNING: Executing reboot command: {}".format(_now(), " ".join(command)))
+    print("[{}] WARNING: Executing reboot command: {}".format(_now(), safe_cmd))
+    if os.geteuid() != 0:
+        print(
+            "[{}] ERROR: Reboot requires root privileges or sudo/NOPASSWD policy.".format(_now()),
+            file=sys.stderr,
+        )
+        return
     try:
         subprocess.run(command, check=True)
     except Exception as exc:
@@ -116,7 +130,7 @@ def main():
     if args.reboot_after_failures > 0 and failures >= args.reboot_after_failures:
         _maybe_reboot(
             args.allow_reboot,
-            args.reboot_cmd.split(),
+            shlex.split(args.reboot_cmd),
             "Consecutive failures ({}) reached reboot threshold ({})".format(
                 failures, args.reboot_after_failures
             ),

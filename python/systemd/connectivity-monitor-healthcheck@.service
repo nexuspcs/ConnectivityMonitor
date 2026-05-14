@@ -9,4 +9,7 @@ User=%i
 Group=%i
 WorkingDirectory=%h/ConnectivityMonitor/python
 Environment=PYTHONUNBUFFERED=1
-ExecStart=/usr/bin/python3 %h/ConnectivityMonitor/python/ops/health_probe.py --url http://127.0.0.1:8080/api/status --min-health 60 --max-loss 10 --state-file %h/ConnectivityMonitor/health_probe_state.json
+Environment=WEB_PORT=8080
+EnvironmentFile=-/etc/default/connectivity-monitor
+EnvironmentFile=-/etc/default/connectivity-monitor-%i
+ExecStart=/usr/bin/python3 %h/ConnectivityMonitor/python/ops/health_probe.py --url http://127.0.0.1:${WEB_PORT}/api/status --min-health 60 --max-loss 10 --state-file %h/ConnectivityMonitor/health_probe_state.json

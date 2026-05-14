@@ -138,6 +138,12 @@ Use one of these:
 - Static IP on Raspberry Pi OS
 
 Then use a stable DNS name on your LAN (for example, `connectivity-monitor.local`) if available.
+Note: `.local` hostname discovery depends on mDNS (for example `avahi-daemon`) being enabled on the Pi/network.
+
+```bash
+sudo systemctl status avahi-daemon
+sudo systemctl enable --now avahi-daemon
+```
 
 ### 2) Install hardened service + timers
 
@@ -160,6 +166,17 @@ sudo systemctl enable connectivity-monitor@YOUR_USER
 sudo systemctl start connectivity-monitor@YOUR_USER
 sudo systemctl enable --now connectivity-monitor-healthcheck@YOUR_USER.timer
 sudo systemctl enable --now connectivity-monitor-archive@YOUR_USER.timer
+```
+
+If your monitor runs on a non-default web port, override the health-check unit port:
+
+```bash
+sudo systemctl edit connectivity-monitor-healthcheck@YOUR_USER.service
+# Add:
+# [Service]
+# Environment=WEB_PORT=9090
+sudo systemctl daemon-reload
+sudo systemctl restart connectivity-monitor-healthcheck@YOUR_USER.timer
 ```
 
 ### 3) Reverse proxy for controlled remote access (TLS/auth)
@@ -193,6 +210,8 @@ python3 ops/health_probe.py \
   --reboot-after-failures 15 \
   --allow-reboot
 ```
+
+Auto-reboot requires root privileges (or an explicit sudo policy that allows the reboot command non-interactively).
 
 ### Log/report persistence and archival
 

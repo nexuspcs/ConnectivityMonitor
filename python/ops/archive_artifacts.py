@@ -58,7 +58,7 @@ def main():
     parser.add_argument("--keep-archive-days", type=int, default=30)
     args = parser.parse_args()
 
-    ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+    ts = datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d_%H%M%SZ")
     logs_dir = os.path.join(args.base_dir, "logs")
     reports_dir = os.path.join(args.base_dir, "reports")
     archive_dir = os.path.join(args.base_dir, "archive")
@@ -72,20 +72,29 @@ def main():
     logs_count = _archive_group(logs_files, logs_archive, args.base_dir)
     reports_count = _archive_group(reports_files, reports_archive, args.base_dir)
 
+    delete_errors = []
     if args.delete_after_archive:
         for file_path in logs_files + reports_files:
-            os.remove(file_path)
+            try:
+                os.remove(file_path)
+            except OSError as exc:
+                delete_errors.append("{} ({})".format(file_path, exc))
 
     pruned = _prune_archives(archive_dir, args.keep_archive_days)
 
     print(
-        "Archived logs={}, reports={}, deleted_source={}, pruned_archives={}".format(
+        "Archived logs={}, reports={}, deleted_source={}, pruned_archives={}, delete_errors={}".format(
             logs_count,
             reports_count,
             bool(args.delete_after_archive),
             pruned,
+            len(delete_errors),
         )
     )
+    if delete_errors:
+        for err in delete_errors:
+            print("Delete error: {}".format(err))
+        raise SystemExit(1)
 
 
 if __name__ == "__main__":
