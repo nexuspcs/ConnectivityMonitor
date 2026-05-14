@@ -114,6 +114,12 @@ sudo systemctl start connectivity-monitor@YOUR_USER
 sudo systemctl status connectivity-monitor@YOUR_USER
 ```
 
+For 24/7 Raspberry Pi operation, the Python directory also includes:
+
+- `python/systemd/connectivity-monitor-healthcheck@.service|.timer` (scheduled API health probe)
+- `python/systemd/connectivity-monitor-archive@.service|.timer` (daily archive/prune of logs/reports)
+- `python/ops/recover_service.sh` (one-command recovery + validation)
+
 > 📖 Full details: [python/README.md](python/README.md)
 
 ---

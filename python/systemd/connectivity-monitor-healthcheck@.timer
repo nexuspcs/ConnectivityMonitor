@@ -1,0 +1,11 @@
+[Unit]
+Description=Run Connectivity Monitor API health probe every minute for %i
+
+[Timer]
+OnBootSec=2m
+OnUnitActiveSec=1m
+AccuracySec=15s
+Unit=connectivity-monitor-healthcheck@%i.service
+
+[Install]
+WantedBy=timers.target
