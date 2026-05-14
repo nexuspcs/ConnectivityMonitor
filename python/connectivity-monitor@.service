@@ -2,14 +2,29 @@
 Description=Connectivity Monitor v4.0
 After=network-online.target
 Wants=network-online.target
+StartLimitIntervalSec=300
+StartLimitBurst=10
 
 [Service]
 Type=simple
 User=%i
+Group=%i
+WorkingDirectory=%h/ConnectivityMonitor/python
+Environment=PYTHONUNBUFFERED=1
 ExecStart=/usr/bin/python3 -m connectivity_monitor --headless
-WorkingDirectory=%h
-Restart=on-failure
-RestartSec=10
+Restart=always
+RestartSec=5
+TimeoutStartSec=30
+TimeoutStopSec=30
+UMask=0027
+LimitNOFILE=65536
+TasksMax=512
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ReadWritePaths=%h/ConnectivityMonitor
+StandardOutput=journal
+StandardError=journal
 
 [Install]
 WantedBy=multi-user.target

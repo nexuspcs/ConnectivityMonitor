@@ -102,6 +102,16 @@ sudo systemctl status connectivity-monitor@YOUR_USER
 sudo journalctl -u connectivity-monitor@YOUR_USER -f
 ```
 
+### Hardened 24/7 service behavior
+
+The included `connectivity-monitor@.service` is hardened for always-on usage:
+
+- Restarts automatically (`Restart=always`) with short backoff
+- Waits for `network-online.target` on boot
+- Adds startup/shutdown timeout protections
+- Sets file descriptor/task limits for long-running operation
+- Restricts filesystem writes to `~/ConnectivityMonitor`
+
 ## Raspberry Pi Setup
 
 The Python version works natively on Raspberry Pi:
@@ -117,6 +127,123 @@ python3 -m connectivity_monitor --headless --web-port 8080
 ```
 
 For always-on monitoring, set it up as a systemd service (see above). Then access the dashboard from any device on your network at `http://<pi-ip>:8080`.
+
+## Raspberry Pi 24/7 Production Setup
+
+### 1) Keep the Pi address stable (queryable anytime)
+
+Use one of these:
+
+- DHCP reservation on your router (recommended), or
+- Static IP on Raspberry Pi OS
+
+Then use a stable DNS name on your LAN (for example, `connectivity-monitor.local`) if available.
+Note: `.local` hostname discovery depends on mDNS (for example `avahi-daemon`) being enabled on the Pi/network.
+
+```bash
+sudo systemctl status avahi-daemon
+sudo systemctl enable --now avahi-daemon
+```
+
+### 2) Install hardened service + timers
+
+```bash
+cd ~/ConnectivityMonitor/python
+
+# Main monitor service
+sudo cp connectivity-monitor@.service /etc/systemd/system/
+
+# Health-check and archive timer units
+sudo cp systemd/connectivity-monitor-healthcheck@.service /etc/systemd/system/
+sudo cp systemd/connectivity-monitor-healthcheck@.timer /etc/systemd/system/
+sudo cp systemd/connectivity-monitor-archive@.service /etc/systemd/system/
+sudo cp systemd/connectivity-monitor-archive@.timer /etc/systemd/system/
+
+sudo systemctl daemon-reload
+
+# Enable monitor + safety timers
+sudo systemctl enable connectivity-monitor@YOUR_USER
+sudo systemctl start connectivity-monitor@YOUR_USER
+sudo systemctl enable --now connectivity-monitor-healthcheck@YOUR_USER.timer
+sudo systemctl enable --now connectivity-monitor-archive@YOUR_USER.timer
+```
+
+If your monitor runs on a non-default web port, override the health-check unit port:
+
+```bash
+sudo systemctl edit connectivity-monitor-healthcheck@YOUR_USER.service
+# Add:
+# [Service]
+# Environment=WEB_PORT=9090
+sudo systemctl daemon-reload
+sudo systemctl restart connectivity-monitor-healthcheck@YOUR_USER.timer
+```
+
+### 3) Reverse proxy for controlled remote access (TLS/auth)
+
+Keep the monitor on localhost and publish through a reverse proxy (Nginx/Caddy/Traefik) to add:
+
+- HTTPS/TLS certificates
+- Basic auth or SSO
+- IP allow-listing/rate limits
+
+Proxy upstream target: `http://127.0.0.1:8080`
+
+## Operational Safety Checks
+
+### API health probe + alert trigger
+
+`ops/health_probe.py` checks `/api/status` and exits non-zero when:
+
+- Endpoint is unreachable
+- Health score is below threshold
+- Packet loss exceeds threshold
+
+This is scheduled every minute by `connectivity-monitor-healthcheck@.timer` and visible in `journalctl`.
+
+Optional auto-reboot trigger example:
+
+```bash
+python3 ops/health_probe.py \
+  --url http://127.0.0.1:8080/api/status \
+  --min-health 60 --max-loss 10 \
+  --reboot-after-failures 15 \
+  --allow-reboot
+```
+
+Auto-reboot requires root privileges (or an explicit sudo policy that allows the reboot command non-interactively).
+
+### Log/report persistence and archival
+
+The monitor writes logs and reports under `~/ConnectivityMonitor`.
+
+`ops/archive_artifacts.py` can archive and prune old data, and is scheduled daily by `connectivity-monitor-archive@.timer`.
+
+## One-command Recovery and Validation
+
+Use:
+
+```bash
+bash ~/ConnectivityMonitor/python/ops/recover_service.sh YOUR_USER
+```
+
+This command:
+
+- Reloads systemd units
+- Re-enables and restarts the monitor service
+- Prints service status and recent journal logs
+- Validates API response from `/api/status`
+
+## Soak Test Checklist (48–72h)
+
+Before calling deployment production-ready, run for 48–72 hours and verify:
+
+- Service survives reboot (`systemctl is-enabled` + post-reboot status)
+- Auto-restart behavior works when process is killed
+- API remains queryable (`/api/status`, `/api/history`, `/api/drops`, `/api/targets`, `/api/heatmap`)
+- Logs and reports continue to generate
+- Health-check timer executes and records status
+- Daily archival timer creates archives and prunes old ones
 
 ## Package Structure
 

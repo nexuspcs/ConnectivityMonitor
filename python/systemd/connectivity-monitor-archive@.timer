@@ -1,0 +1,10 @@
+[Unit]
+Description=Archive Connectivity Monitor logs/reports daily for %i
+
+[Timer]
+OnCalendar=*-*-* 03:00:00
+Persistent=true
+Unit=connectivity-monitor-archive@%i.service
+
+[Install]
+WantedBy=timers.target
